@@ -25,7 +25,7 @@ OUTPUT_ROOT = os.path.join(PROJECT_ROOT, 'codes', 'CIFAR10', 'outputs')
 
 # Shared baseline for control-variable ablations.
 BASELINE: Dict[str, object] = {
-    'epochs': 200,
+    'epochs': 50,
     'batch_size': 128,
     'lr': 0.1,
     'weight_decay': 5e-4,
