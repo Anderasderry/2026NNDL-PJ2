@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..'
 
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
+from common.utils.device import get_default_device, resolve_device, torch
 import torch.nn as nn
 from tqdm import tqdm
 
@@ -99,7 +99,7 @@ def plot_history(history_path, save_path):
 
 
 def plot_filters(checkpoint_path, save_path, max_filters=64, device='cpu'):
-    model, _, _ = _load_model_from_checkpoint(checkpoint_path, torch.device(device))
+    model, _, _ = _load_model_from_checkpoint(checkpoint_path, resolve_device(device))
     weights = model.first_conv_weights().numpy()
     n_filters = min(weights.shape[0], max_filters)
     grid = int(math.ceil(math.sqrt(n_filters)))
@@ -142,7 +142,7 @@ def plot_loss_landscape(
         theta(t) = theta(0) + t * direction
     where direction is the normalized gradient on a fixed mini-batch.
     """
-    device = torch.device(device)
+    device = resolve_device(device)
     model, checkpoint, _ = _load_model_from_checkpoint(checkpoint_path, device)
     criterion = nn.CrossEntropyLoss()
 
@@ -217,7 +217,7 @@ def parse_args():
     parser.add_argument('--run-name', type=str, default='cifarnet')
     parser.add_argument('--history', type=str, default=None)
     parser.add_argument('--checkpoint', type=str, default=None)
-    parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu')
+    parser.add_argument('--device', type=str, default=get_default_device())
     parser.add_argument('--skip-landscape', action='store_true', help='Skip loss landscape plot')
     parser.add_argument('--landscape-step-min', type=float, default=-0.2)
     parser.add_argument('--landscape-step-max', type=float, default=0.2)

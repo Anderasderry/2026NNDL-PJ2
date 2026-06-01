@@ -182,7 +182,7 @@ def parse_args():
         default='all',
         help='Run a subset of experiment groups',
     )
-    parser.add_argument('--device', default='cuda' if _cuda_available() else 'cpu')
+    parser.add_argument('--device', default=_default_device())
     parser.add_argument('--num-workers', type=int, default=2)
     parser.add_argument('--epochs', type=int, default=None, help='Override epochs for all runs')
     parser.add_argument('--dry-run', action='store_true', help='Print commands without running')
@@ -190,12 +190,13 @@ def parse_args():
     return parser.parse_args()
 
 
-def _cuda_available() -> bool:
-    try:
-        import torch
-        return torch.cuda.is_available()
-    except ImportError:
-        return False
+def _default_device() -> str:
+    codes_dir = os.path.join(PROJECT_ROOT, 'codes')
+    if codes_dir not in sys.path:
+        sys.path.insert(0, codes_dir)
+    from common.utils.device import get_default_device
+
+    return get_default_device()
 
 
 def select_experiments(group: str) -> List[Experiment]:

@@ -12,7 +12,9 @@ PJ2/
 ├── codes/
 │   ├── common/                    # Task 1 / Task 2 公用代码
 │   │   ├── data/loaders.py        # CIFAR-10 数据加载
-│   │   └── utils/nn.py            # 权重初始化
+│   │   └── utils/
+│   │       ├── device.py          # NPU / CUDA / CPU 设备检测与初始化
+│   │       └── nn.py              # 权重初始化
 │   ├── CIFAR10/                   # Task 1
 │   │   ├── models/cnn.py          # CIFARNet 模型
 │   │   ├── train.py               # 训练脚本
@@ -25,11 +27,23 @@ PJ2/
 
 ## 环境依赖
 
-建议使用独立 conda / venv 环境，安装：
+建议使用独立 conda / venv 环境。
+
+**通用依赖：**
 
 ```bash
 pip install torch torchvision numpy matplotlib tqdm
 ```
+
+**昇腾 NPU 环境（如 ModelArts / 华为云 Ascend 910）：**
+
+除上述包外，还需安装 `torch_npu` 及 Ascend CANN toolkit（由平台镜像或官方文档提供）。代码已通过 `codes/common/utils/device.py` 适配 NPU，会自动：
+
+- 禁用有问题的 `torch_npu` 自动加载
+- 修复 `triton` 与 `torch_npu` 的版本兼容问题
+- 按 **npu → cuda → cpu** 优先级选择默认设备
+
+NPU 环境下建议 DataLoader 使用 `--num-workers 0`。
 
 ## 准备数据集
 
@@ -39,7 +53,7 @@ pip install torch torchvision numpy matplotlib tqdm
 PJ2/data/cifar-10-batches-py/
 ```
 
-或放置完整压缩包，首次训练时会自动解压：
+或放置完整压缩包（约 170 MB），首次训练时会自动解压：
 
 ```
 PJ2/data/cifar-10-python.tar.gz
@@ -51,19 +65,24 @@ PJ2/data/cifar-10-python.tar.gz
 
 ```bash
 cd codes/CIFAR10
-python train.py --epochs 1 --n-items 256 --batch-size 64 --num-workers 0 --device cuda --run-name debug
+python train.py --epochs 1 --n-items 256 --batch-size 64 --num-workers 0 --run-name debug
 ```
+
+脚本会自动检测可用设备（NPU 环境下输出 `Device: npu`）。
 
 ## 训练单个实验
 
 在 `codes/CIFAR10/` 下：
 
 ```bash
-# 主实验（baseline）
-python train.py --epochs 200 --device cuda --run-name cifarnet
+# 主实验（baseline，自动使用 NPU / CUDA / CPU）
+python train.py --epochs 200 --run-name cifarnet
 
 # 常用可调参数
 python train.py --width 64 --activation relu --loss ce --optimizer sgd --lr 0.1 --run-name my_run
+
+# 显式指定设备
+python train.py --device npu --epochs 200 --num-workers 0 --run-name cifarnet
 ```
 
 | 参数 | 说明 | 默认值 |
@@ -77,7 +96,8 @@ python train.py --width 64 --activation relu --loss ce --optimizer sgd --lr 0.1 
 | `--lr` | 学习率 | 0.1（AdamW 建议 3e-4） |
 | `--weight-decay` | L2 正则 | 5e-4 |
 | `--run-name` | 输出子目录名 | cifarnet |
-| `--device` | `cuda` / `cpu` | 自动检测 |
+| `--device` | `npu` / `cuda` / `cpu` | 自动检测（npu → cuda → cpu） |
+| `--num-workers` | DataLoader 进程数 | 2（NPU 建议 0） |
 
 训练结果保存在 `codes/CIFAR10/outputs/<run-name>/`：
 
@@ -93,17 +113,17 @@ python train.py --width 64 --activation relu --loss ce --optimizer sgd --lr 0.1 
 # 预览将要执行的命令
 python run_task1_experiments.py --dry-run
 
-# 跑全部 9 组实验（GPU）
-python run_task1_experiments.py --device cuda --num-workers 0
+# 跑全部 9 组实验（自动使用 NPU）
+python run_task1_experiments.py --num-workers 0
 
 # 只跑某一类消融
-python run_task1_experiments.py --group width --device cuda
-python run_task1_experiments.py --group loss --device cuda
-python run_task1_experiments.py --group activation --device cuda
-python run_task1_experiments.py --group optimizer --device cuda
+python run_task1_experiments.py --group width --num-workers 0
+python run_task1_experiments.py --group loss --num-workers 0
+python run_task1_experiments.py --group activation --num-workers 0
+python run_task1_experiments.py --group optimizer --num-workers 0
 
 # 跳过已有结果的实验（断点续跑）
-python run_task1_experiments.py --device cuda --skip-existing
+python run_task1_experiments.py --num-workers 0 --skip-existing
 ```
 
 实验组包括：baseline、width、loss、activation、optimizer。汇总报告写入 `codes/CIFAR10/outputs/experiments_report.json`。
@@ -114,10 +134,10 @@ python run_task1_experiments.py --device cuda --skip-existing
 
 ```bash
 # 评估 test accuracy
-python evaluate.py --checkpoint outputs/cifarnet/best_model.pt --device cuda
+python evaluate.py --checkpoint outputs/cifarnet/best_model.pt
 
 # 生成训练曲线、第一层滤波器、loss landscape
-python visualize.py --run-name cifarnet --device cuda
+python visualize.py --run-name cifarnet
 
 # 跳过 loss landscape（更快）
 python visualize.py --run-name cifarnet --skip-landscape

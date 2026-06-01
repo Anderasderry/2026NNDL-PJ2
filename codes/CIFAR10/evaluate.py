@@ -7,7 +7,7 @@ import sys
 
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-import torch
+from common.utils.device import get_default_device, resolve_device, torch
 import torch.nn as nn
 
 from common.data.loaders import get_cifar_loaders
@@ -40,13 +40,13 @@ def parse_args():
     parser.add_argument('--checkpoint', type=str, required=True)
     parser.add_argument('--batch-size', type=int, default=256)
     parser.add_argument('--num-workers', type=int, default=2)
-    parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu')
+    parser.add_argument('--device', type=str, default=get_default_device())
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
-    device = torch.device(args.device)
+    device = resolve_device(args.device)
 
     checkpoint = torch.load(args.checkpoint, map_location=device)
     config = checkpoint.get('config', {})

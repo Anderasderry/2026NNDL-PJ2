@@ -3,17 +3,16 @@
 import argparse
 import json
 import os
-import random
 import sys
 import time
 
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-import numpy as np
-import torch
-import torch.nn as nn
+from common.utils.device import get_default_device, resolve_device, set_seed, torch
 from torch.optim import SGD, AdamW
 from tqdm import tqdm
+
+import torch.nn as nn
 
 from common.data.loaders import get_cifar_loaders
 from models.cnn import CIFARNet, count_parameters
@@ -23,16 +22,6 @@ LOSS_FNS = {
     'ce': nn.CrossEntropyLoss,
     'label_smooth': lambda: nn.CrossEntropyLoss(label_smoothing=0.1),
 }
-
-
-def set_seed(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
 
 
 def build_optimizer(name, params, lr, weight_decay):
@@ -102,7 +91,7 @@ def parse_args():
     parser.add_argument('--n-items', type=int, default=-1, help='Use subset for quick debug')
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--run-name', type=str, default='cifarnet')
-    parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu')
+    parser.add_argument('--device', type=str, default=get_default_device())
     return parser.parse_args()
 
 
@@ -113,7 +102,7 @@ def main():
     run_dir = os.path.join(OUTPUT_DIR, args.run_name)
     os.makedirs(run_dir, exist_ok=True)
 
-    device = torch.device(args.device)
+    device = resolve_device(args.device)
     train_loader, test_loader = get_cifar_loaders(
         batch_size=args.batch_size,
         num_workers=args.num_workers,
