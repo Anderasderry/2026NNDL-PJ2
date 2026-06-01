@@ -223,6 +223,7 @@ def main():
 
     for index, exp in enumerate(experiments, start=1):
         resolved = exp.resolve_args(args.device, args.num_workers, args.epochs)
+        resolved['run_name'] = exp.run_name
         cmd = build_command(resolved)
 
         print(f'\n[{index}/{len(experiments)}] {exp.run_name} ({exp.group})')
