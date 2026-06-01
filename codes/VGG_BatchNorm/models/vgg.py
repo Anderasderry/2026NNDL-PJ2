@@ -1,10 +1,15 @@
 """
 VGG
 """
+import os
+import sys
+
+sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
 import numpy as np
 from torch import nn
 
-from codes_for_pj.utils.nn import init_weights_
+from common.utils.nn import init_weights_
 
 # ## Models implementation
 def get_number_of_parameters(model):

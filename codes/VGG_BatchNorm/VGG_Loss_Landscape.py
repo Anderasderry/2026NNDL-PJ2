@@ -6,12 +6,15 @@ import numpy as np
 import torch
 import os
 import random
+import sys
 from tqdm import tqdm as tqdm
 from IPython import display
 
+sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
+
 from models.vgg import VGG_A
 from models.vgg import VGG_A_BatchNorm # you need to implement this network
-from data.loaders import get_cifar_loader
+from common.data.loaders import get_cifar_loader
 
 # ## Constants (parameters) initialization
 device_id = [0,1,2,3]
