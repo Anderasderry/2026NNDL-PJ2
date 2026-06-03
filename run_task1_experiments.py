@@ -21,7 +21,10 @@ from typing import Dict, List, Optional
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 TRAIN_SCRIPT = os.path.join(PROJECT_ROOT, 'codes', 'CIFAR10', 'train.py')
-OUTPUT_ROOT = os.path.join(PROJECT_ROOT, 'codes', 'CIFAR10', 'outputs')
+sys.path.insert(0, os.path.join(PROJECT_ROOT, 'codes'))
+from common.paths import CIFAR10_OUTPUT_DIR
+
+OUTPUT_ROOT = CIFAR10_OUTPUT_DIR
 
 # Shared baseline for control-variable ablations.
 BASELINE: Dict[str, object] = {

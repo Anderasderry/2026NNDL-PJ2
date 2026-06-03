@@ -5,9 +5,12 @@ import os
 from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
 
-DATA_ROOT = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), '..', '..', '..', 'data')
-)
+try:
+    from ..paths import DATA_ROOT
+except ImportError:
+    DATA_ROOT = os.path.normpath(
+        os.path.join(os.path.dirname(__file__), '..', '..', '..', 'data')
+    )
 
 CIFAR10_MEAN = (0.4914, 0.4822, 0.4465)
 CIFAR10_STD = (0.2470, 0.2435, 0.2616)

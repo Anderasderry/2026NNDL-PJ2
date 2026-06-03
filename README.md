@@ -10,8 +10,13 @@
 ```
 PJ2/
 ├── data/                          # CIFAR-10 数据集（不提交 GitHub）
+├── logs/                          # 实验日志（不提交 GitHub）
+├── outputs/                       # 全部训练输出（不提交 GitHub）
+│   ├── CIFAR10/                   # Task 1：各 run-name 子目录 + experiments_report.json
+│   └── VGG_BatchNorm/             # Task 2：figures/、models/、vgg_a/ 等
 ├── codes/
 │   ├── common/                    # Task 1 / Task 2 公用代码
+│   │   ├── paths.py               # 数据 / 日志 / 输出路径（统一入口）
 │   │   ├── data/loaders.py        # CIFAR-10 数据加载
 │   │   └── utils/
 │   │       ├── device.py          # NPU / CUDA / CPU 设备检测与初始化
@@ -20,12 +25,10 @@ PJ2/
 │   │   ├── models/cnn.py          # CIFARNet 模型
 │   │   ├── train.py               # 训练脚本
 │   │   ├── evaluate.py            # 评估 checkpoint
-│   │   ├── visualize.py           # 曲线 / 滤波器 / loss landscape
-│   │   └── outputs/               # 训练输出（不提交 GitHub）
+│   │   └── visualize.py           # 曲线 / 滤波器 / loss landscape
 │   └── VGG_BatchNorm/             # Task 2
 │       ├── models/vgg.py          # VGG_A / VGG_A_BatchNorm
-│       ├── VGG_Loss_Landscape.py  # 训练、对比与 landscape 可视化
-│       └── outputs/               # Task 2 输出（不提交 GitHub）
+│       └── VGG_Loss_Landscape.py  # 训练、对比与 landscape 可视化
 └── run_task1_experiments.py       # 一键跑 Task 1 全部正式实验
 ```
 
@@ -103,7 +106,7 @@ python train.py --device npu --epochs 200 --num-workers 0 --run-name cifarnet
 | `--device` | `npu` / `cuda` / `cpu` | 自动检测（npu → cuda → cpu） |
 | `--num-workers` | DataLoader 进程数 | 2（NPU 建议 0） |
 
-训练结果保存在 `codes/CIFAR10/outputs/<run-name>/`：
+训练结果保存在 `outputs/CIFAR10/<run-name>/`：
 
 - `best_model.pt` — 最佳权重
 - `history.json` — 每 epoch 的 loss / accuracy
@@ -133,15 +136,15 @@ python run_task1_experiments.py --group optimizer --num-workers 0
 python run_task1_experiments.py --num-workers 0 --skip-existing
 ```
 
-实验组包括：baseline、width、loss、activation、optimizer（默认各 **50 epochs**）。汇总报告写入 `codes/CIFAR10/outputs/experiments_report.json`。
+实验组包括：baseline、width、loss、activation、optimizer（默认各 **50 epochs**）。汇总报告写入 `outputs/CIFAR10/experiments_report.json`。
 
 ## 评估与可视化
 
 某次实验训练完成后，在 `codes/CIFAR10/` 下：
 
 ```bash
-# 评估 test accuracy
-python evaluate.py --checkpoint outputs/cifarnet/best_model.pt
+# 评估 test accuracy（路径相对于 codes/CIFAR10/）
+python evaluate.py --checkpoint ../../outputs/CIFAR10/cifarnet/best_model.pt
 
 # 生成训练曲线、第一层滤波器、loss landscape
 python visualize.py --run-name cifarnet
@@ -150,7 +153,7 @@ python visualize.py --run-name cifarnet
 python visualize.py --run-name cifarnet --skip-landscape
 ```
 
-输出图片保存在对应 `outputs/<run-name>/` 目录下。
+输出图片保存在 `outputs/CIFAR10/<run-name>/` 目录下。
 
 ## CIFARNet 结构简述
 
@@ -210,7 +213,7 @@ python VGG_Loss_Landscape.py --learning-rates 1e-3 2e-3 1e-4 5e-4 --num-workers 
 
 ### 输出文件
 
-结果保存在 `codes/VGG_BatchNorm/outputs/`：
+结果保存在 `outputs/VGG_BatchNorm/`：
 
 **训练对比：**
 
@@ -242,4 +245,4 @@ python VGG_Loss_Landscape.py --learning-rates 1e-3 2e-3 1e-4 5e-4 --num-workers 
 
 - **Part A**：对比训练曲线、验证准确率，说明 BN 加速收敛 / 提升稳定性。
 - **Part B**：展示 loss landscape 与 gradient landscape 对比图，解释 BN 版 band 更窄 → 优化 landscape 更平滑；结合 gradient predictiveness 图说明梯度变化更稳定。
-- 上传 `outputs/models/*.pt` 至网盘，在报告中附链接。
+- 上传 `outputs/VGG_BatchNorm/models/*.pt` 与 `outputs/CIFAR10/cifarnet_final/best_model.pt` 至网盘，在报告中附链接。

@@ -17,12 +17,13 @@ sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..'
 
 from common.utils.device import resolve_device, set_seed, torch
 from common.data.loaders import get_cifar_loader
+from common.paths import VGG_FIGURES_DIR, VGG_MODELS_DIR, VGG_OUTPUT_DIR
 from models.vgg import VGG_A, VGG_A_BatchNorm
 from torch import nn
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'outputs')
-FIGURES_DIR = os.path.join(OUTPUT_DIR, 'figures')
-MODELS_DIR = os.path.join(OUTPUT_DIR, 'models')
+OUTPUT_DIR = VGG_OUTPUT_DIR
+FIGURES_DIR = VGG_FIGURES_DIR
+MODELS_DIR = VGG_MODELS_DIR
 DEFAULT_LEARNING_RATES = [1e-3, 2e-3, 1e-4, 5e-4]
 
 device = resolve_device()

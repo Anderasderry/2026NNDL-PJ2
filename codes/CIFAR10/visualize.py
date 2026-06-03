@@ -15,9 +15,10 @@ import torch.nn as nn
 from tqdm import tqdm
 
 from common.data.loaders import get_cifar_loader
+from common.paths import CIFAR10_OUTPUT_DIR
 from models.cnn import CIFARNet
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'outputs')
+OUTPUT_DIR = CIFAR10_OUTPUT_DIR
 
 
 def _load_model_from_checkpoint(checkpoint_path, device):

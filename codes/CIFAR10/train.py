@@ -15,9 +15,10 @@ from tqdm import tqdm
 import torch.nn as nn
 
 from common.data.loaders import get_cifar_loaders
+from common.paths import CIFAR10_OUTPUT_DIR
 from models.cnn import CIFARNet, count_parameters
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'outputs')
+OUTPUT_DIR = CIFAR10_OUTPUT_DIR
 LOSS_FNS = {
     'ce': nn.CrossEntropyLoss,
     'label_smooth': lambda: nn.CrossEntropyLoss(label_smoothing=0.1),

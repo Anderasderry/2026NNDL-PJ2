@@ -1,10 +1,17 @@
 """Shared utilities for NNDL Project 2."""
 
-import os
-
-CODES_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
-PROJECT_ROOT = os.path.normpath(os.path.join(CODES_DIR, '..'))
-DATA_ROOT = os.path.join(PROJECT_ROOT, 'data')
+from .paths import (
+    CIFAR10_OUTPUT_DIR,
+    CODES_DIR,
+    DATA_ROOT,
+    LOGS_ROOT,
+    OUTPUT_ROOT,
+    PROJECT_ROOT,
+    VGG_FIGURES_DIR,
+    VGG_MODELS_DIR,
+    VGG_OUTPUT_DIR,
+    cifar10_run_dir,
+)
 
 
 def setup_import_paths():
