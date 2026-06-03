@@ -251,6 +251,7 @@ def plot_landscape_comparison(
     min_b,
     max_b,
     save_path,
+    ylim=None,
 ):
     plt.figure(figsize=(9, 5))
     plt.plot(steps_a, max_a, color='C0', linewidth=1.2, label='VGG-A max')
@@ -264,10 +265,29 @@ def plot_landscape_comparison(
     plt.xlabel('Training step')
     plt.ylabel('Loss')
     plt.title('Loss landscape: VGG-A vs VGG-A+BN')
+    if ylim is not None:
+        plt.ylim(ylim)
     plt.legend()
     plt.tight_layout()
     plt.savefig(save_path, dpi=150)
     plt.close()
+
+
+def load_landscape_curves(tag):
+    path = os.path.join(OUTPUT_DIR, f'{tag}_landscape.json')
+    with open(path, encoding='utf-8') as f:
+        data = json.load(f)
+    return data['steps'], data['min_curve'], data['max_curve']
+
+
+def replot_loss_landscape_comparison(ylim=None):
+    steps_a, min_a, max_a = load_landscape_curves('vgg_a')
+    steps_b, min_b, max_b = load_landscape_curves('vgg_a_bn')
+    save_path = os.path.join(FIGURES_DIR, 'loss_landscape_comparison.png')
+    plot_landscape_comparison(
+        steps_a, min_a, max_a, steps_b, min_b, max_b, save_path, ylim=ylim,
+    )
+    print(f'Saved comparison plot: {save_path}' + (f' (ylim={ylim})' if ylim else ''))
 
 
 def build_model(use_bn=False):
@@ -424,6 +444,19 @@ def parse_args():
         default=DEFAULT_LEARNING_RATES,
         help='LRs for loss landscape experiment',
     )
+    parser.add_argument(
+        '--replot-comparison',
+        action='store_true',
+        help='Replot loss_landscape_comparison.png from saved JSON (no training)',
+    )
+    parser.add_argument(
+        '--loss-ylim',
+        type=float,
+        nargs=2,
+        metavar=('YMIN', 'YMAX'),
+        default=None,
+        help='Y-axis limits for loss landscape comparison, e.g. --loss-ylim 0 4',
+    )
     return parser.parse_args()
 
 
@@ -431,6 +464,11 @@ def main():
     args = parse_args()
     os.makedirs(FIGURES_DIR, exist_ok=True)
     os.makedirs(MODELS_DIR, exist_ok=True)
+
+    if args.replot_comparison:
+        ylim = tuple(args.loss_ylim) if args.loss_ylim is not None else None
+        replot_loss_landscape_comparison(ylim=ylim)
+        return
 
     print(f'Device: {device}')
     train_loader = get_cifar_loader(
@@ -472,8 +510,9 @@ def main():
             args.learning_rates,
             use_bn=True,
         )
+        ylim = tuple(args.loss_ylim) if args.loss_ylim is not None else None
         compare_path = os.path.join(FIGURES_DIR, 'loss_landscape_comparison.png')
-        plot_landscape_comparison(steps_a, min_a, max_a, steps_b, min_b, max_b, compare_path)
+        plot_landscape_comparison(steps_a, min_a, max_a, steps_b, min_b, max_b, compare_path, ylim=ylim)
         print(f'Saved comparison plot: {compare_path}')
 
         grad_compare_path = os.path.join(FIGURES_DIR, 'grad_landscape_comparison.png')
