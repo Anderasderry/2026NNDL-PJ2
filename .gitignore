@@ -3,21 +3,16 @@ project_2_2026.lyx
 project_2_2026.pdf
 bib.bib
 pic/
+
+# --- Report ---
 report/
 
 # --- Datasets ---
-**/cifar-10-batches-py/
-*.tar.gz
-
-# --- Model weights & checkpoints ---
-*.pth
-*.pt
-outputs/
+data/
 
 # --- Generated outputs & logs ---
 logs/
-*.log
-sample.png
+outputs/
 
 # --- Python ---
 __pycache__/
@@ -34,6 +29,9 @@ dist/
 venv/
 env/
 ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # --- IDE & OS ---
 .idea/
@@ -50,7 +48,3 @@ desktop.ini
 .env.*
 *.key
 credentials.json
-
-# --- NPU runtime artifacts ---
-fusion_result.json
-kernel_meta/

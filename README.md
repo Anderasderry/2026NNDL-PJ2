@@ -28,8 +28,13 @@ PJ2/
 │   │   └── visualize.py           # 曲线 / 滤波器 / loss landscape
 │   └── VGG_BatchNorm/             # Task 2
 │       ├── models/vgg.py          # VGG_A / VGG_A_BatchNorm
-│       └── VGG_Loss_Landscape.py  # 训练、对比与 landscape 可视化
-└── run_task1_experiments.py       # 一键跑 Task 1 全部正式实验
+│       ├── VGG_Loss_Landscape.py  # 课程 starter（填 # Add code）+ CLI 入口
+│       ├── experiments.py         # 完整实验流程与 argparse
+│       ├── train_VGG.py           # 训练 / 评估工具
+│       ├── core.py                # landscape 曲线计算
+│       └── plots.py               # landscape 绘图
+├── run_task1.sh                   # 一键跑 Task 1 训练 + 评估 + 可视化
+└── run_task2.sh                   # 一键跑 Task 2 训练 + landscape + 重绘图
 ```
 
 ## 环境依赖
@@ -112,31 +117,31 @@ python train.py --device npu --epochs 200 --num-workers 0 --run-name cifarnet
 - `history.json` — 每 epoch 的 loss / accuracy
 - `config.json` / `summary.json` — 超参与最终结果
 
-## 一键跑全部 Task 1 正式实验
+## 一键跑 Task 1（训练 + 评估 + 可视化）
 
 在项目根目录：
 
 ```bash
-# 预览将要执行的命令
-python run_task1_experiments.py --dry-run
+# 完整流程：9 组网格搜索（50 epochs）+ width=96 正式训练（200 epochs）+ 评估 + 可视化
+bash run_task1.sh
 
-# 跑全部 9 组实验（自动使用 NPU，默认 50 epochs 快速消融）
-python run_task1_experiments.py --num-workers 0
+# 跳过已有 summary.json 的实验（断点续跑，默认开启）
+bash run_task1.sh
 
-# 选定最优配置后，单独跑 200 epochs 正式训练
-# cd codes/CIFAR10 && python train.py --epochs 200 --run-name cifarnet_final
+# 强制全部重跑
+SKIP_EXISTING=0 bash run_task1.sh
 
-# 只跑某一类消融
-python run_task1_experiments.py --group width --num-workers 0
-python run_task1_experiments.py --group loss --num-workers 0
-python run_task1_experiments.py --group activation --num-workers 0
-python run_task1_experiments.py --group optimizer --num-workers 0
-
-# 跳过已有结果的实验（断点续跑）
-python run_task1_experiments.py --num-workers 0 --skip-existing
+# 自定义正式训练配置
+FINAL_WIDTH=96 FINAL_EPOCHS=200 FINAL_RUN_NAME=cifarnet_final bash run_task1.sh
 ```
 
-实验组包括：baseline、width、loss、activation、optimizer（默认各 **50 epochs**）。汇总报告写入 `outputs/CIFAR10/experiments_report.json`。
+`run_task1.sh` 依次执行：
+
+1. 9 组网格搜索（baseline / width / loss / activation / optimizer，各 50 epochs）
+2. 正式训练 `cifarnet_final`（默认 width=96，200 epochs）
+3. `evaluate.py` 评估最终模型
+4. `visualize.py --skip-landscape` 生成训练曲线与第一层滤波器
+5. 汇总写入 `outputs/CIFAR10/experiments_report.json`
 
 ## 评估与可视化
 
@@ -179,7 +184,20 @@ python visualize.py --run-name cifarnet --skip-landscape
 
 ### 运行实验
 
-在 `codes/VGG_BatchNorm/` 下：
+**一键跑完整流程**（项目根目录）：
+
+```bash
+# 训练 + landscape + 报告用对比图重绘
+bash run_task2.sh
+
+# 快速调试
+EPOCHS=2 N_ITEMS=1024 bash run_task2.sh
+
+# 已有 JSON，只重绘对比图
+SKIP_TRAIN=1 bash run_task2.sh
+```
+
+也可在 `codes/VGG_BatchNorm/` 下手动运行。**带 CLI 参数**时由 `VGG_Loss_Landscape.py` 转发到 `experiments.py`；**无参数**时运行课程 starter 脚本（Jupyter 风格，需 IPython）：
 
 ```bash
 # 完整实验：对比训练 + loss/gradient landscape（默认 20 epochs）
@@ -196,6 +214,11 @@ python VGG_Loss_Landscape.py --skip-comparison --epochs 20 --num-workers 0
 
 # 自定义学习率（用于 landscape 实验）
 python VGG_Loss_Landscape.py --learning-rates 1e-3 2e-3 1e-4 5e-4 --num-workers 0
+
+# 仅从已有 JSON 重绘对比图（无需 GPU / 重新训练）
+python VGG_Loss_Landscape.py --replot-comparison \
+  --loss-ylim 0 2.5 --predictiveness-ylim 0 1 \
+  --plot-stride 50 --fill-alpha 0.15
 ```
 
 | 参数 | 说明 | 默认值 |
@@ -208,8 +231,13 @@ python VGG_Loss_Landscape.py --learning-rates 1e-3 2e-3 1e-4 5e-4 --num-workers 
 | `--num-workers` | DataLoader 进程数 | 0 |
 | `--skip-comparison` | 跳过 VGG-A vs BN 对比 | — |
 | `--skip-landscape` | 跳过 landscape 实验 | — |
+| `--replot-comparison` | 仅从 JSON 重绘 loss landscape / predictiveness 对比图 | — |
+| `--loss-ylim` | loss landscape 对比图 y 轴范围 | 自动 |
+| `--predictiveness-ylim` | predictiveness 对比图 y 轴范围 | 自动 |
+| `--plot-stride` | 对比图下采样步长 | 50 |
+| `--fill-alpha` | landscape 填充透明度 | 0.15 |
 
-设备会自动检测（NPU → CUDA → CPU），无需手动指定。
+设备会自动检测（NPU → CUDA → CPU），无需手动指定。输出目录为 `outputs/VGG_BatchNorm/`（由 `common/paths.py` 统一管理）。
 
 ### 输出文件
 
@@ -221,7 +249,6 @@ python VGG_Loss_Landscape.py --learning-rates 1e-3 2e-3 1e-4 5e-4 --num-workers 
 |------|------|
 | `figures/vgg_a_training_curve.png` | VGG-A 训练 loss / 验证准确率 |
 | `figures/vgg_a_bn_training_curve.png` | VGG-A+BN 训练曲线 |
-| `figures/grad_norm_comparison.png` | 两者梯度 norm 随 step 变化 |
 | `figures/grad_predictiveness_comparison.png` | 梯度逐步变化量 \|g_t - g_{t-1}\| |
 | `vgg_a/summary.json` | VGG-A 最佳验证准确率等 |
 | `vgg_a_bn/summary.json` | VGG-A+BN 结果摘要 |
@@ -231,18 +258,14 @@ python VGG_Loss_Landscape.py --learning-rates 1e-3 2e-3 1e-4 5e-4 --num-workers 
 
 | 文件 | 内容 |
 |------|------|
-| `figures/vgg_a_loss_landscape.png` | VGG-A loss landscape（多 lr 的 max/min 带） |
-| `figures/vgg_a_bn_loss_landscape.png` | VGG-A+BN loss landscape |
-| `figures/loss_landscape_comparison.png` | 两者 loss landscape 同图对比 |
-| `figures/vgg_a_grad_landscape.png` | VGG-A 梯度 landscape |
-| `figures/vgg_a_bn_grad_landscape.png` | VGG-A+BN 梯度 landscape |
-| `figures/grad_landscape_comparison.png` | 两者 gradient landscape 同图对比 |
-| `figures/vgg_a_grad_max_diff.png` | VGG-A 每 step 的 max(grad)-min(grad) |
+| `figures/loss_landscape_comparison.png` | 两者 loss landscape 同图对比（作业必做） |
+| `figures/grad_predictiveness_comparison.png` | 梯度可预测性对比（作业必做） |
+| `figures/vgg_a_grad_max_diff.png` | VGG-A 每 step 的 max(grad)-min(grad)（作业选做） |
 | `figures/vgg_a_bn_grad_max_diff.png` | VGG-A+BN 同上 |
 | `vgg_a_landscape.json` / `vgg_a_bn_landscape.json` | landscape 数值数据 |
 
 ### 报告建议
 
 - **Part A**：对比训练曲线、验证准确率，说明 BN 加速收敛 / 提升稳定性。
-- **Part B**：展示 loss landscape 与 gradient landscape 对比图，解释 BN 版 band 更窄 → 优化 landscape 更平滑；结合 gradient predictiveness 图说明梯度变化更稳定。
+- **Part B**：展示 loss landscape 对比图（BN 版 band 更窄）；结合 gradient predictiveness 与 max gradient difference 分析优化稳定性。
 - 上传 `outputs/VGG_BatchNorm/models/*.pt` 与 `outputs/CIFAR10/cifarnet_final/best_model.pt` 至网盘，在报告中附链接。
