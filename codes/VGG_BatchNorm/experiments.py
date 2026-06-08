@@ -16,16 +16,15 @@ from plots import (
     plot_landscape_comparison,
     plot_max_diff_curve,
 )
+import train_VGG
 from train_VGG import (
     FIGURES_DIR,
     MODELS_DIR,
     OUTPUT_DIR,
     build_model,
-    get_cifar_loader,
     init_training,
     set_random_seeds,
     train,
-    device,
 )
 
 
@@ -206,12 +205,12 @@ def main():
         return
 
     init_training()
-    print(f'Device: {device}')
-    train_loader = get_cifar_loader(
+    print(f'Device: {train_VGG.device}')
+    train_loader = train_VGG.get_cifar_loader(
         train=True, batch_size=args.batch_size,
         num_workers=args.num_workers, n_items=args.n_items,
     )
-    val_loader = get_cifar_loader(
+    val_loader = train_VGG.get_cifar_loader(
         train=False, batch_size=args.batch_size,
         num_workers=args.num_workers, shuffle=False, n_items=args.n_items,
     )
