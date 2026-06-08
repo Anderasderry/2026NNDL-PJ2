@@ -1,14 +1,3 @@
-#!/usr/bin/env bash
-# Task 1: grid-search ablations, final training, evaluation, and visualization.
-#
-# Usage (from project root):
-#   bash run_task1.sh
-#   SKIP_EXISTING=0 bash run_task1.sh          # force re-run all ablations
-#   ABLATION_EPOCHS=50 FINAL_EPOCHS=200 bash run_task1.sh
-#
-# Recommended in tmux:
-#   tmux new -s pj2-task1 -d "cd /path/to/PJ2 && bash run_task1.sh"
-
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -21,14 +10,11 @@ mkdir -p logs "$OUTPUT_ROOT"
 TS="$(date +%Y%m%d_%H%M)"
 NUM_WORKERS="${NUM_WORKERS:-2}"
 SKIP_EXISTING="${SKIP_EXISTING:-1}"
-ABLATION_EPOCHS="${ABLATION_EPOCHS:-50}"
-FINAL_EPOCHS="${FINAL_EPOCHS:-200}"
-FINAL_WIDTH="${FINAL_WIDTH:-96}"
-FINAL_RUN_NAME="${FINAL_RUN_NAME:-cifarnet_final}"
+GRID_SEARCH_EPOCHS="${GRID_SEARCH_EPOCHS:-50}"
 
-# Shared baseline for control-variable ablations.
+# Grid search shared baseline (control variables; one dimension changes per run).
 COMMON=(
-  --epochs "$ABLATION_EPOCHS"
+  --epochs "$GRID_SEARCH_EPOCHS"
   --batch-size 128
   --lr 0.1
   --weight-decay 5e-4
@@ -42,7 +28,7 @@ COMMON=(
   --num-workers "$NUM_WORKERS"
 )
 
-run_ablation() {
+run_grid_search() {
   local run_name="$1"
   shift
   local summary="$OUTPUT_ROOT/$run_name/summary.json"
@@ -63,70 +49,23 @@ echo "Project root     : $ROOT"
 echo "Log timestamp    : $TS"
 echo "Num workers      : $NUM_WORKERS"
 echo "Skip existing    : $SKIP_EXISTING"
-echo "Ablation epochs  : $ABLATION_EPOCHS"
-echo "Final run        : $FINAL_RUN_NAME (width=$FINAL_WIDTH, epochs=$FINAL_EPOCHS)"
+echo "Grid search ep.  : $GRID_SEARCH_EPOCHS"
 echo "========================================"
-echo "Step 1/4: Task 1 grid search (9 runs)"
-echo "========================================"
-
-run_ablation cifarnet
-run_ablation width32 --width 32
-run_ablation width96 --width 96
-run_ablation loss_label_smooth --loss label_smooth
-run_ablation wd_1e4 --weight-decay 1e-4
-run_ablation wd_1e3 --weight-decay 1e-3
-run_ablation act_gelu --activation gelu
-run_ablation act_leaky_relu --activation leaky_relu
-run_ablation optim_adamw --optimizer adamw --lr 3e-4
-
-echo "========================================"
-echo "Step 2/4: Task 1 final training"
+echo "Step 1/2: Task 1 grid search (9 runs)"
 echo "========================================"
 
-FINAL_SUMMARY="$OUTPUT_ROOT/$FINAL_RUN_NAME/summary.json"
-if [[ "$SKIP_EXISTING" == "1" && -f "$FINAL_SUMMARY" ]]; then
-  echo "  -> skipped $FINAL_RUN_NAME (summary.json exists)"
-else
-  echo "  -> training $FINAL_RUN_NAME"
-  (
-    cd "$CIFAR10_DIR"
-    python train.py \
-      --epochs "$FINAL_EPOCHS" \
-      --batch-size 128 \
-      --lr 0.1 \
-      --weight-decay 5e-4 \
-      --width "$FINAL_WIDTH" \
-      --dropout 0.5 \
-      --activation relu \
-      --optimizer sgd \
-      --loss ce \
-      --scheduler cosine \
-      --seed 42 \
-      --num-workers "$NUM_WORKERS" \
-      --run-name "$FINAL_RUN_NAME"
-  ) 2>&1 | tee "$ROOT/logs/task1_${FINAL_RUN_NAME}_${TS}.log"
-fi
+run_grid_search cifarnet
+run_grid_search width32 --width 32
+run_grid_search width96 --width 96
+run_grid_search loss_label_smooth --loss label_smooth
+run_grid_search wd_1e4 --weight-decay 1e-4
+run_grid_search wd_1e3 --weight-decay 1e-3
+run_grid_search act_gelu --activation gelu
+run_grid_search act_leaky_relu --activation leaky_relu
+run_grid_search optim_adamw --optimizer adamw --lr 3e-4
 
 echo "========================================"
-echo "Step 3/4: Task 1 evaluation"
-echo "========================================"
-
-(
-  cd "$CIFAR10_DIR"
-  python evaluate.py --checkpoint "../../outputs/CIFAR10/$FINAL_RUN_NAME/best_model.pt" --num-workers "$NUM_WORKERS"
-) 2>&1 | tee "$ROOT/logs/task1_eval_${FINAL_RUN_NAME}_${TS}.log"
-
-echo "========================================"
-echo "Step 4/4: Task 1 visualization"
-echo "========================================"
-
-(
-  cd "$CIFAR10_DIR"
-  python visualize.py --run-name "$FINAL_RUN_NAME" --skip-landscape --num-workers "$NUM_WORKERS"
-) 2>&1 | tee "$ROOT/logs/task1_vis_${FINAL_RUN_NAME}_${TS}.log"
-
-echo "========================================"
-echo "Writing experiments_report.json"
+echo "Step 2/2: Writing experiments_report.json"
 echo "========================================"
 
 python - <<'PY'
@@ -139,14 +78,14 @@ output_root = os.path.join(root, "outputs", "CIFAR10")
 
 experiments = [
     ("cifarnet", "baseline", "Main model: CIFARNet baseline (width=64, ReLU, CE, SGD)"),
-    ("width32", "width", "Ablation (a): base width=32"),
-    ("width96", "width", "Ablation (a): base width=96"),
-    ("loss_label_smooth", "loss", "Ablation (b): label smoothing (0.1)"),
-    ("wd_1e4", "loss", "Ablation (b): lighter L2 regularization (weight_decay=1e-4)"),
-    ("wd_1e3", "loss", "Ablation (b): stronger L2 regularization (weight_decay=1e-3)"),
-    ("act_gelu", "activation", "Ablation (c): GELU activation"),
-    ("act_leaky_relu", "activation", "Ablation (c): LeakyReLU activation"),
-    ("optim_adamw", "optimizer", "Optimizer ablation: AdamW (lr=3e-4)"),
+    ("width32", "width", "grid search (a): base width=32"),
+    ("width96", "width", "grid search (a): base width=96"),
+    ("loss_label_smooth", "loss", "grid search (b): label smoothing (0.1)"),
+    ("wd_1e4", "loss", "grid search (b): lighter L2 regularization (weight_decay=1e-4)"),
+    ("wd_1e3", "loss", "grid search (b): stronger L2 regularization (weight_decay=1e-3)"),
+    ("act_gelu", "activation", "grid search (c): GELU activation"),
+    ("act_leaky_relu", "activation", "grid search (c): LeakyReLU activation"),
+    ("optim_adamw", "optimizer", "grid search: AdamW optimizer (lr=3e-4)"),
 ]
 
 rows = []
@@ -181,9 +120,11 @@ print(f"Report saved: {report_path}")
 PY
 
 echo "========================================"
-echo "TASK 1 DONE"
-echo "Ablations        : $OUTPUT_ROOT/"
-echo "Final model      : $OUTPUT_ROOT/$FINAL_RUN_NAME/"
+echo "TASK 1 GRID SEARCH DONE"
+echo "Results          : $OUTPUT_ROOT/"
 echo "Report           : $OUTPUT_ROOT/experiments_report.json"
 echo "Logs             : $ROOT/logs/task1_*_${TS}.log"
+echo ""
+echo "Next: pick the best config from the report, then run 200-epoch training, e.g.:"
+echo "  cd codes/CIFAR10 && python train.py --epochs 200 --width 96 --run-name cifarnet_final --num-workers $NUM_WORKERS"
 echo "========================================"

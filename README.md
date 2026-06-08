@@ -2,7 +2,7 @@
 
 复旦大学《神经网络与深度学习》Project 2。
 
-- **Task 1**：在 CIFAR-10 上训练自定义 CNN（CIFARNet），支持消融实验、评估与可视化。
+- **Task 1**：在 CIFAR-10 上训练自定义 CNN（CIFARNet），支持网格搜索、评估与可视化。
 - **Task 2**：VGG-A 与 VGG-A+BatchNorm 对比，以及 Loss / Gradient Landscape 分析。
 
 ## 项目结构
@@ -33,7 +33,7 @@ PJ2/
 │       ├── train_VGG.py           # 训练 / 评估工具
 │       ├── core.py                # landscape 曲线计算
 │       └── plots.py               # landscape 绘图
-├── run_task1.sh                   # 一键跑 Task 1 训练 + 评估 + 可视化
+├── run_task1.sh                   # 一键跑 Task 1 网格搜索（50 epochs）
 └── run_task2.sh                   # 一键跑 Task 2 训练 + landscape + 重绘图
 ```
 
@@ -117,12 +117,12 @@ python train.py --device npu --epochs 200 --num-workers 0 --run-name cifarnet
 - `history.json` — 每 epoch 的 loss / accuracy
 - `config.json` / `summary.json` — 超参与最终结果
 
-## 一键跑 Task 1（训练 + 评估 + 可视化）
+## 一键跑 Task 1 网格搜索
 
 在项目根目录：
 
 ```bash
-# 完整流程：9 组网格搜索（50 epochs）+ width=96 正式训练（200 epochs）+ 评估 + 可视化
+# 9 组网格搜索（50 epochs）+ 汇总 experiments_report.json
 bash run_task1.sh
 
 # 跳过已有 summary.json 的实验（断点续跑，默认开启）
@@ -130,18 +130,21 @@ bash run_task1.sh
 
 # 强制全部重跑
 SKIP_EXISTING=0 bash run_task1.sh
-
-# 自定义正式训练配置
-FINAL_WIDTH=96 FINAL_EPOCHS=200 FINAL_RUN_NAME=cifarnet_final bash run_task1.sh
 ```
 
 `run_task1.sh` 依次执行：
 
 1. 9 组网格搜索（baseline / width / loss / activation / optimizer，各 50 epochs）
-2. 正式训练 `cifarnet_final`（默认 width=96，200 epochs）
-3. `evaluate.py` 评估最终模型
-4. `visualize.py --skip-landscape` 生成训练曲线与第一层滤波器
-5. 汇总写入 `outputs/CIFAR10/experiments_report.json`
+2. 汇总写入 `outputs/CIFAR10/experiments_report.json`
+
+**选定最优配置后**，再单独跑 200 epoch 正式训练，例如：
+
+```bash
+cd codes/CIFAR10
+python train.py --epochs 200 --width 96 --run-name cifarnet_final --num-workers 0
+python evaluate.py --checkpoint ../../outputs/CIFAR10/cifarnet_final/best_model.pt
+python visualize.py --run-name cifarnet_final --skip-landscape
+```
 
 ## 评估与可视化
 

@@ -1,14 +1,3 @@
-#!/usr/bin/env bash
-# Task 2: VGG-A vs VGG-A+BN comparison, loss/gradient landscape, and report figures.
-#
-# Usage (from project root):
-#   bash run_task2.sh
-#   EPOCHS=2 N_ITEMS=1024 bash run_task2.sh    # quick debug
-#   SKIP_TRAIN=1 bash run_task2.sh             # only replot from existing JSON
-#
-# Recommended in tmux:
-#   tmux new -s pj2-task2 -d "cd /path/to/PJ2 && bash run_task2.sh"
-
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
