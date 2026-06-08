@@ -19,7 +19,7 @@ OUTPUT_ROOT="$ROOT/outputs/VGG_BatchNorm"
 mkdir -p logs "$OUTPUT_ROOT/figures" "$OUTPUT_ROOT/models"
 
 TS="$(date +%Y%m%d_%H%M)"
-NUM_WORKERS="${NUM_WORKERS:-0}"
+NUM_WORKERS="${NUM_WORKERS:-2}"
 EPOCHS="${EPOCHS:-20}"
 BATCH_SIZE="${BATCH_SIZE:-128}"
 LR="${LR:-1e-3}"
