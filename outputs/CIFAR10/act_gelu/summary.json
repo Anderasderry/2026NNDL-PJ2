@@ -1,0 +1,8 @@
+{
+  "best_test_acc": 0.9182,
+  "best_test_error": 0.08179999999999998,
+  "epochs": 50,
+  "train_time_sec": 308.9537513256073,
+  "parameters": 4821194,
+  "checkpoint": "outputs/CIFAR10/act_gelu/best_model.pt"
+}

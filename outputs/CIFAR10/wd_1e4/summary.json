@@ -1,0 +1,8 @@
+{
+  "best_test_acc": 0.8423,
+  "best_test_error": 0.15769999999999995,
+  "epochs": 50,
+  "train_time_sec": 306.31837248802185,
+  "parameters": 4821194,
+  "checkpoint": "outputs/CIFAR10/wd_1e4/best_model.pt"
+}

@@ -1,0 +1,7 @@
+{
+  "model": "vgg_a_bn",
+  "epochs": 20,
+  "lr": 0.001,
+  "best_val_acc": 0.8701,
+  "final_val_acc": 0.8701
+}

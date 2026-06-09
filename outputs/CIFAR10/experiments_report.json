@@ -1,0 +1,96 @@
+{
+  "generated_at": "2026-06-08 21:35:09",
+  "group": "all",
+  "experiments": [
+    {
+      "run_name": "cifarnet",
+      "group": "baseline",
+      "description": "Main model: CIFARNet baseline (width=64, ReLU, CE, SGD)",
+      "status": "done",
+      "best_test_acc": 0.9178,
+      "best_test_error": 0.08220000000000005,
+      "parameters": 4821194,
+      "train_time_sec": 315.6394703388214
+    },
+    {
+      "run_name": "width32",
+      "group": "width",
+      "description": "grid search (a): base width=32",
+      "status": "done",
+      "best_test_acc": 0.9051,
+      "best_test_error": 0.09489999999999998,
+      "parameters": 1241578,
+      "train_time_sec": 301.2783451080322
+    },
+    {
+      "run_name": "width96",
+      "group": "width",
+      "description": "grid search (a): base width=96",
+      "status": "done",
+      "best_test_acc": 0.921,
+      "best_test_error": 0.07899999999999996,
+      "parameters": 10741674,
+      "train_time_sec": 314.0426938533783
+    },
+    {
+      "run_name": "loss_label_smooth",
+      "group": "loss",
+      "description": "grid search (b): label smoothing (0.1); seed=43 (re-run after seed=42 collapse)",
+      "status": "done",
+      "best_test_acc": 0.9187,
+      "best_test_error": 0.08130000000000004,
+      "parameters": 4821194,
+      "train_time_sec": 310.89844250679016
+    },
+    {
+      "run_name": "wd_1e4",
+      "group": "loss",
+      "description": "grid search (b): lighter L2 regularization (weight_decay=1e-4)",
+      "status": "done",
+      "best_test_acc": 0.8423,
+      "best_test_error": 0.15769999999999995,
+      "parameters": 4821194,
+      "train_time_sec": 306.31837248802185
+    },
+    {
+      "run_name": "wd_1e3",
+      "group": "loss",
+      "description": "grid search (b): stronger L2 regularization (weight_decay=1e-3)",
+      "status": "done",
+      "best_test_acc": 0.922,
+      "best_test_error": 0.07799999999999996,
+      "parameters": 4821194,
+      "train_time_sec": 302.2401249408722
+    },
+    {
+      "run_name": "act_gelu",
+      "group": "activation",
+      "description": "grid search (c): GELU activation",
+      "status": "done",
+      "best_test_acc": 0.9182,
+      "best_test_error": 0.08179999999999998,
+      "parameters": 4821194,
+      "train_time_sec": 308.9537513256073
+    },
+    {
+      "run_name": "act_leaky_relu",
+      "group": "activation",
+      "description": "grid search (c): LeakyReLU activation",
+      "status": "done",
+      "best_test_acc": 0.9175,
+      "best_test_error": 0.08250000000000002,
+      "parameters": 4821194,
+      "train_time_sec": 304.8429706096649
+    },
+    {
+      "run_name": "optim_adamw",
+      "group": "optimizer",
+      "description": "grid search: AdamW optimizer (lr=3e-4)",
+      "status": "done",
+      "best_test_acc": 0.8929,
+      "best_test_error": 0.10709999999999997,
+      "parameters": 4821194,
+      "train_time_sec": 304.33253479003906
+    }
+  ]
+}

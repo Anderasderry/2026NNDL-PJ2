@@ -1,0 +1,8 @@
+{
+  "best_test_acc": 0.9175,
+  "best_test_error": 0.08250000000000002,
+  "epochs": 50,
+  "train_time_sec": 304.8429706096649,
+  "parameters": 4821194,
+  "checkpoint": "outputs/CIFAR10/act_leaky_relu/best_model.pt"
+}

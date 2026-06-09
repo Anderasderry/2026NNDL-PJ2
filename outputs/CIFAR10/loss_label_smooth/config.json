@@ -1,0 +1,18 @@
+{
+  "epochs": 50,
+  "batch_size": 128,
+  "lr": 0.1,
+  "weight_decay": 0.0005,
+  "width": 64,
+  "dropout": 0.5,
+  "activation": "relu",
+  "optimizer": "sgd",
+  "loss": "label_smooth",
+  "scheduler": "cosine",
+  "num_workers": 2,
+  "n_items": -1,
+  "seed": 43,
+  "run_name": "loss_label_smooth",
+  "device": "cuda",
+  "parameters": 4821194
+}

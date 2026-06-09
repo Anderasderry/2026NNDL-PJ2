@@ -1,0 +1,18 @@
+{
+  "epochs": 50,
+  "batch_size": 128,
+  "lr": 0.1,
+  "weight_decay": 0.0005,
+  "width": 64,
+  "dropout": 0.5,
+  "activation": "gelu",
+  "optimizer": "sgd",
+  "loss": "ce",
+  "scheduler": "cosine",
+  "num_workers": 2,
+  "n_items": -1,
+  "seed": 42,
+  "run_name": "act_gelu",
+  "device": "cuda",
+  "parameters": 4821194
+}
