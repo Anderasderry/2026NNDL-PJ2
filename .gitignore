@@ -10,9 +10,11 @@ report/
 # --- Datasets ---
 data/
 
-# --- Generated outputs & logs ---
+# --- logs ---
 logs/
-outputs/
+
+# --- weights ---
+*.pt
 
 # --- Python ---
 __pycache__/

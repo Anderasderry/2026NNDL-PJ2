@@ -218,10 +218,17 @@ python VGG_Loss_Landscape.py --skip-comparison --epochs 20 --num-workers 0
 # 自定义学习率（用于 landscape 实验）
 python VGG_Loss_Landscape.py --learning-rates 1e-3 2e-3 1e-4 5e-4 --num-workers 0
 
-# 仅从已有 JSON 重绘对比图（无需 GPU / 重新训练）
+# 仅从已有 JSON 重绘两张对比图（无需 GPU / 重新训练）
 python VGG_Loss_Landscape.py --replot-comparison \
   --loss-ylim 0 2.5 --predictiveness-ylim 0 1 \
   --plot-stride 50 --fill-alpha 0.15
+
+# 只重绘 loss landscape 对比图
+python VGG_Loss_Landscape.py --replot-loss-landscape \
+  --loss-ylim 0 2.5 --plot-stride 50 --fill-alpha 0.15
+
+# 只重绘 gradient predictiveness 对比图
+python VGG_Loss_Landscape.py --replot-predictiveness --plot-stride 1
 ```
 
 | 参数 | 说明 | 默认值 |
@@ -234,7 +241,9 @@ python VGG_Loss_Landscape.py --replot-comparison \
 | `--num-workers` | DataLoader 进程数 | 0 |
 | `--skip-comparison` | 跳过 VGG-A vs BN 对比 | — |
 | `--skip-landscape` | 跳过 landscape 实验 | — |
-| `--replot-comparison` | 仅从 JSON 重绘 loss landscape / predictiveness 对比图 | — |
+| `--replot-comparison` | 重绘上述两张对比图 | — |
+| `--replot-loss-landscape` | 仅重绘 `loss_landscape_comparison.png` | — |
+| `--replot-predictiveness` | 仅重绘 `grad_predictiveness_comparison.png` | — |
 | `--loss-ylim` | loss landscape 对比图 y 轴范围 | 自动 |
 | `--predictiveness-ylim` | predictiveness 对比图 y 轴范围 | 自动 |
 | `--plot-stride` | 对比图下采样步长 | 50 |

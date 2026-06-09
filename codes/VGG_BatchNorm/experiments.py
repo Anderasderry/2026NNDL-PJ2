@@ -39,12 +39,8 @@ def load_comparison_grads(tag):
         return flatten_steps(json.load(f))
 
 
-def replot_comparison_figures(
-    loss_ylim=None,
-    predictiveness_ylim=None,
-    fill_alpha=0.20,
-    plot_stride=50,
-):
+def replot_loss_landscape_comparison(loss_ylim=None, fill_alpha=0.20, plot_stride=50):
+    """Replot loss_landscape_comparison.png from vgg_*_landscape.json."""
     steps_a, min_a, max_a = load_landscape_curves('vgg_a')
     steps_b, min_b, max_b = load_landscape_curves('vgg_a_bn')
     loss_path = os.path.join(FIGURES_DIR, 'loss_landscape_comparison.png')
@@ -54,6 +50,9 @@ def replot_comparison_figures(
     )
     print(f'Saved: {loss_path} (stride={plot_stride})')
 
+
+def replot_grad_predictiveness_comparison(predictiveness_ylim=None, plot_stride=50):
+    """Replot grad_predictiveness_comparison.png from vgg_*/grads.json."""
     flat_a = load_comparison_grads('vgg_a')
     flat_b = load_comparison_grads('vgg_a_bn')
     _, delta_a = compute_grad_predictiveness(flat_a)
@@ -65,6 +64,21 @@ def replot_comparison_figures(
         ylim=predictiveness_ylim, plot_stride=plot_stride,
     )
     print(f'Saved: {pred_path} (stride={plot_stride})')
+
+
+def replot_comparison_figures(
+    loss_ylim=None,
+    predictiveness_ylim=None,
+    fill_alpha=0.20,
+    plot_stride=50,
+):
+    """Replot both comparison figures (loss landscape + gradient predictiveness)."""
+    replot_loss_landscape_comparison(
+        loss_ylim=loss_ylim, fill_alpha=fill_alpha, plot_stride=plot_stride,
+    )
+    replot_grad_predictiveness_comparison(
+        predictiveness_ylim=predictiveness_ylim, plot_stride=plot_stride,
+    )
 
 
 def run_model_comparison(train_loader, val_loader, epochs_n, lr, plot_stride=50):
@@ -182,7 +196,12 @@ def parse_args():
     parser.add_argument('--skip-comparison', action='store_true')
     parser.add_argument('--skip-landscape', action='store_true')
     parser.add_argument('--learning-rates', type=float, nargs='+', default=DEFAULT_LEARNING_RATES)
-    parser.add_argument('--replot-comparison', action='store_true')
+    parser.add_argument('--replot-comparison', action='store_true',
+                        help='Replot loss landscape and gradient predictiveness comparison figures')
+    parser.add_argument('--replot-loss-landscape', action='store_true',
+                        help='Replot loss_landscape_comparison.png only')
+    parser.add_argument('--replot-predictiveness', action='store_true',
+                        help='Replot grad_predictiveness_comparison.png only')
     parser.add_argument('--loss-ylim', type=float, nargs=2, default=None)
     parser.add_argument('--predictiveness-ylim', type=float, nargs=2, default=None)
     parser.add_argument('--fill-alpha', type=float, default=0.15)
@@ -195,13 +214,20 @@ def main():
     os.makedirs(FIGURES_DIR, exist_ok=True)
     os.makedirs(MODELS_DIR, exist_ok=True)
 
-    if args.replot_comparison:
-        replot_comparison_figures(
-            loss_ylim=tuple(args.loss_ylim) if args.loss_ylim else None,
-            predictiveness_ylim=tuple(args.predictiveness_ylim) if args.predictiveness_ylim else None,
-            fill_alpha=args.fill_alpha,
-            plot_stride=args.plot_stride,
-        )
+    if args.replot_comparison or args.replot_loss_landscape or args.replot_predictiveness:
+        loss_ylim = tuple(args.loss_ylim) if args.loss_ylim else None
+        predictiveness_ylim = tuple(args.predictiveness_ylim) if args.predictiveness_ylim else None
+        if args.replot_comparison or args.replot_loss_landscape:
+            replot_loss_landscape_comparison(
+                loss_ylim=loss_ylim,
+                fill_alpha=args.fill_alpha,
+                plot_stride=args.plot_stride,
+            )
+        if args.replot_comparison or args.replot_predictiveness:
+            replot_grad_predictiveness_comparison(
+                predictiveness_ylim=predictiveness_ylim,
+                plot_stride=args.plot_stride,
+            )
         return
 
     init_training()

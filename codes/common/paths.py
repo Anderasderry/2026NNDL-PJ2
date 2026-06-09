@@ -8,6 +8,7 @@ DATA_ROOT = os.path.join(PROJECT_ROOT, 'data')
 LOGS_ROOT = os.path.join(PROJECT_ROOT, 'logs')
 
 OUTPUT_ROOT = os.path.join(PROJECT_ROOT, 'outputs')
+WEIGHTS_DIR = os.path.join(PROJECT_ROOT, 'weights')
 CIFAR10_OUTPUT_DIR = os.path.join(OUTPUT_ROOT, 'CIFAR10')
 VGG_OUTPUT_DIR = os.path.join(OUTPUT_ROOT, 'VGG_BatchNorm')
 VGG_FIGURES_DIR = os.path.join(VGG_OUTPUT_DIR, 'figures')
