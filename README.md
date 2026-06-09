@@ -3,7 +3,16 @@
 复旦大学《神经网络与深度学习》Project 2。
 
 - **Task 1**：在 CIFAR-10 上训练自定义 CNN（CIFARNet），支持网格搜索、评估与可视化。
-- **Task 2**：VGG-A 与 VGG-A+BatchNorm 对比，以及 Loss / Gradient Landscape 分析。
+- **Task 2**：VGG-A 与 VGG-A+BatchNorm 对比，以及 Loss / Gradient 优化分析。
+
+部分实验结果（图表、JSON）已包含在 `outputs/` 中，可直接查阅或用于重绘。
+
+## 实验结果摘要
+
+| 任务 | 最佳配置 | 主要指标 |
+|------|----------|----------|
+| Task 1 | `width96_final`（width=96，wd=5e-4，200 epochs） | Test accuracy **94.23%**（error 5.77%） |
+| Task 2 | VGG-A+BN vs VGG-A（Adam，lr=1e-3，20 epochs） | Val accuracy **87.01%** vs 82.90%（+4.11 pp） |
 
 ## 项目结构
 
@@ -11,12 +20,13 @@
 PJ2/
 ├── data/                          # CIFAR-10 数据集
 ├── logs/                          # 实验日志
-├── outputs/                       # 全部训练输出
-│   ├── CIFAR10/                   # Task 1：各 run-name 子目录 + experiments_report.json
+├── weights/                       # 预训练权重（需从网盘下载）
+├── outputs/                       # 训练输出
+│   ├── CIFAR10/                   # Task 1
 │   └── VGG_BatchNorm/             # Task 2：figures/、models/、vgg_a/ 等
 ├── codes/
 │   ├── common/                    # Task 1 / Task 2 公用代码
-│   │   ├── paths.py               # 数据 / 日志 / 输出路径（统一入口）
+│   │   ├── paths.py               # 数据 / 日志 / 输出路径
 │   │   ├── data/loaders.py        # CIFAR-10 数据加载
 │   │   └── utils/
 │   │       ├── device.py          # NPU / CUDA / CPU 设备检测与初始化
@@ -64,6 +74,27 @@ PJ2/data/cifar-10-python.tar.gz
 ```
 
 也可手动下载：<https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz>
+
+## 预训练权重
+
+`*.pt` 权重文件不入库。从 [Google Drive](https://drive.google.com/drive/folders/19UBlpJP-q3F3ViugIzdemxbVWqC5CKnO?usp=sharing) 下载后放入项目根目录 `weights/`：
+
+| 文件 | 说明 |
+|------|------|
+| `task1_best_model.pt` | CIFARNet 最佳模型（对应 `width96_final`） |
+| `vgg_a.pt` | Task 2 VGG-A |
+| `vgg_a_bn.pt` | Task 2 VGG-A+BN |
+
+下载后可直接评估：
+
+```bash
+# Task 1
+cd codes/CIFAR10
+python evaluate.py --checkpoint ../../weights/task1_best_model.pt
+python visualize.py --checkpoint ../../weights/task1_best_model.pt --run-name width96_weights --skip-landscape --num-workers 0
+```
+
+Task 2 训练产出的权重默认在 `outputs/VGG_BatchNorm/models/`；若使用网盘文件，可复制到 `weights/` 或 `outputs/VGG_BatchNorm/models/` 后加载。
 
 ## 快速 Debug（验证流程）
 
@@ -131,9 +162,9 @@ SKIP_EXISTING=0 bash run_task1.sh
 
 ```bash
 cd codes/CIFAR10
-python train.py --epochs 200 --width 96 --run-name cifarnet_final --num-workers 0
-python evaluate.py --checkpoint ../../outputs/CIFAR10/cifarnet_final/best_model.pt
-python visualize.py --run-name cifarnet_final --skip-landscape
+python train.py --epochs 200 --width 96 --run-name width96_final --num-workers 0
+python evaluate.py --checkpoint ../../outputs/CIFAR10/width96_final/best_model.pt
+python visualize.py --run-name width96_final --skip-landscape
 ```
 
 ## 评估与可视化
@@ -142,16 +173,16 @@ python visualize.py --run-name cifarnet_final --skip-landscape
 
 ```bash
 # 评估 test accuracy（路径相对于 codes/CIFAR10/）
-python evaluate.py --checkpoint ../../outputs/CIFAR10/cifarnet/best_model.pt
+python evaluate.py --checkpoint ../../outputs/CIFAR10/width96_final/best_model.pt
 
-# 生成训练曲线、第一层滤波器、loss landscape
-python visualize.py --run-name cifarnet
+# 生成训练曲线、第一层卷积滤波器；可选 1D loss landscape
+python visualize.py --run-name width96_final
 
 # 跳过 loss landscape（更快）
-python visualize.py --run-name cifarnet --skip-landscape
+python visualize.py --run-name width96_final --skip-landscape
 ```
 
-输出图片保存在 `outputs/CIFAR10/<run-name>/` 目录下。
+`visualize.py` 默认输出 `training_curves.png`、`first_conv_filters.png`、`confusion_matrix.png`、`misclassified_examples.png`；加 `--skip-interpretation` 可跳过后两者；未加 `--skip-landscape` 时额外生成 `loss_landscape.png`。图片保存在 `outputs/CIFAR10/<run-name>/`。
 
 ## CIFARNet 结构简述
 
@@ -165,8 +196,8 @@ python visualize.py --run-name cifarnet --skip-landscape
 
 ### 目标
 
-1. **VGG-A vs VGG-A+BN（15%）**：对比有无 BatchNorm 的训练效果与收敛特性。
-2. **优化分析（15%）**：通过 Loss Landscape、Gradient Landscape、Gradient Predictiveness 分析 BN 如何平滑优化过程。
+1. **VGG-A vs VGG-A+BN**：对比有无 BatchNorm 的训练效果与收敛特性。
+2. **优化分析**：通过 Loss Landscape、Gradient Predictiveness（\|g_t - g_{t-1}\|）、Max Gradient Difference（跨学习率 max−min）分析 BN 如何平滑优化过程。
 
 ### 模型
 
@@ -251,17 +282,16 @@ python VGG_Loss_Landscape.py --replot-predictiveness --plot-stride 1
 |------|------|
 | `figures/vgg_a_training_curve.png` | VGG-A 训练 loss / 验证准确率 |
 | `figures/vgg_a_bn_training_curve.png` | VGG-A+BN 训练曲线 |
-| `figures/grad_predictiveness_comparison.png` | 梯度逐步变化量 \|g_t - g_{t-1}\| |
 | `vgg_a/summary.json` | VGG-A 最佳验证准确率等 |
 | `vgg_a_bn/summary.json` | VGG-A+BN 结果摘要 |
-| `models/vgg_a.pt` / `models/vgg_a_bn.pt` | 最佳模型权重 |
+| `models/vgg_a.pt` / `models/vgg_a_bn.pt` | 最佳模型权重（`*.pt` 不入库时可从网盘获取） |
 
-**Loss / Gradient Landscape：**
+**优化分析（Loss / Gradient）：**
 
 | 文件 | 内容 |
 |------|------|
 | `figures/loss_landscape_comparison.png` | 两者 loss landscape 同图对比 |
-| `figures/grad_predictiveness_comparison.png` | 梯度可预测性对比 |
-| `figures/vgg_a_grad_max_diff.png` | VGG-A 每 step 的 max(grad)-min(grad) |
+| `figures/grad_predictiveness_comparison.png` | Gradient predictiveness：\|g_t - g_{t-1}\| 逐步变化量 |
+| `figures/vgg_a_grad_max_diff.png` | VGG-A 每 step 跨 lr 的 max(grad)−min(grad) |
 | `figures/vgg_a_bn_grad_max_diff.png` | VGG-A+BN 同上 |
-| `vgg_a_landscape.json` / `vgg_a_bn_landscape.json` | landscape 数值数据 |
+| `vgg_a_landscape.json` / `vgg_a_bn_landscape.json` | landscape 数值数据（可 `--replot-*` 重绘） |

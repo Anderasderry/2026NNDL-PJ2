@@ -4,5 +4,5 @@
   "epochs": 200,
   "train_time_sec": 1253.609763622284,
   "parameters": 10741674,
-  "checkpoint": "outputs/CIFAR10/w96_final/best_model.pt"
+  "checkpoint": "outputs/CIFAR10/width96_final/best_model.pt"
 }

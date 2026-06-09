@@ -1,4 +1,4 @@
-"""Visualize training curves, conv filters, and loss landscape."""
+"""Visualize training curves, conv filters, interpretation plots, and loss landscape."""
 
 import argparse
 import json
@@ -14,11 +14,16 @@ from common.utils.device import get_default_device, resolve_device, torch
 import torch.nn as nn
 from tqdm import tqdm
 
-from common.data.loaders import get_cifar_loader
+from common.data.loaders import CIFAR10_MEAN, CIFAR10_STD, get_cifar_loader
 from common.paths import CIFAR10_OUTPUT_DIR
 from models.cnn import CIFARNet
 
 OUTPUT_DIR = CIFAR10_OUTPUT_DIR
+
+CIFAR10_CLASSES = (
+    'airplane', 'automobile', 'bird', 'cat', 'deer',
+    'dog', 'frog', 'horse', 'ship', 'truck',
+)
 
 
 def _load_model_from_checkpoint(checkpoint_path, device):
@@ -125,6 +130,137 @@ def plot_filters(checkpoint_path, save_path, max_filters=64, device='cpu'):
     plt.close(fig)
 
 
+def _denormalize_image(image_chw):
+    img = np.transpose(image_chw, (1, 2, 0))
+    img = img * np.array(CIFAR10_STD) + np.array(CIFAR10_MEAN)
+    return np.clip(img, 0.0, 1.0)
+
+
+@torch.no_grad()
+def _collect_test_predictions(model, loader, device):
+    model.eval()
+    all_labels = []
+    all_preds = []
+    all_images = []
+
+    for images, labels in loader:
+        images = images.to(device, non_blocking=True)
+        labels = labels.to(device, non_blocking=True)
+        preds = model(images).argmax(dim=1)
+        all_labels.append(labels.cpu())
+        all_preds.append(preds.cpu())
+        all_images.append(images.cpu())
+
+    labels = torch.cat(all_labels)
+    preds = torch.cat(all_preds)
+    images = torch.cat(all_images)
+    return labels.numpy(), preds.numpy(), images.numpy()
+
+
+def plot_confusion_matrix(checkpoint_path, save_path, device='cpu', batch_size=256, num_workers=0):
+    device = resolve_device(device)
+    model, _, _ = _load_model_from_checkpoint(checkpoint_path, device)
+    loader = get_cifar_loader(
+        train=False,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        augment=False,
+    )
+    labels, preds, _ = _collect_test_predictions(model, loader, device)
+
+    matrix = np.zeros((len(CIFAR10_CLASSES), len(CIFAR10_CLASSES)), dtype=int)
+    for true_label, pred_label in zip(labels, preds):
+        matrix[true_label, pred_label] += 1
+
+    row_sums = matrix.sum(axis=1, keepdims=True)
+    normalized = matrix / np.maximum(row_sums, 1)
+
+    fig, ax = plt.subplots(figsize=(8, 7))
+    im = ax.imshow(normalized, cmap='Blues', vmin=0.0, vmax=1.0)
+    ax.set_xticks(range(len(CIFAR10_CLASSES)))
+    ax.set_yticks(range(len(CIFAR10_CLASSES)))
+    ax.set_xticklabels(CIFAR10_CLASSES, rotation=45, ha='right')
+    ax.set_yticklabels(CIFAR10_CLASSES)
+    ax.set_xlabel('Predicted label')
+    ax.set_ylabel('True label')
+    ax.set_title('Confusion Matrix (row-normalized test accuracy)')
+
+    for i in range(len(CIFAR10_CLASSES)):
+        for j in range(len(CIFAR10_CLASSES)):
+            count = matrix[i, j]
+            if count == 0:
+                continue
+            color = 'white' if normalized[i, j] > 0.5 else 'black'
+            ax.text(j, i, str(count), ha='center', va='center', color=color, fontsize=7)
+
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label='Recall fraction')
+    fig.tight_layout()
+    fig.savefig(save_path, dpi=150)
+    plt.close(fig)
+
+    summary_path = os.path.splitext(save_path)[0] + '.json'
+    per_class_acc = {
+        CIFAR10_CLASSES[i]: float(matrix[i, i] / max(row_sums[i, 0], 1))
+        for i in range(len(CIFAR10_CLASSES))
+    }
+    with open(summary_path, 'w', encoding='utf-8') as f:
+        json.dump({'per_class_accuracy': per_class_acc, 'confusion_matrix': matrix.tolist()}, f, indent=2)
+    return per_class_acc
+
+
+def plot_misclassified_examples(
+    checkpoint_path,
+    save_path,
+    device='cpu',
+    batch_size=256,
+    num_workers=0,
+    max_examples=12,
+):
+    device = resolve_device(device)
+    model, _, _ = _load_model_from_checkpoint(checkpoint_path, device)
+    loader = get_cifar_loader(
+        train=False,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        augment=False,
+    )
+    labels, preds, images = _collect_test_predictions(model, loader, device)
+    wrong_idx = np.where(labels != preds)[0]
+    if wrong_idx.size == 0:
+        return []
+
+    chosen = wrong_idx[:max_examples]
+    cols = min(4, max_examples)
+    rows = int(math.ceil(len(chosen) / cols))
+
+    fig, axes = plt.subplots(rows, cols, figsize=(cols * 2.4, rows * 2.6))
+    axes = np.atleast_2d(axes)
+
+    for plot_idx, sample_idx in enumerate(chosen):
+        row, col = divmod(plot_idx, cols)
+        ax = axes[row, col]
+        true_label = int(labels[sample_idx])
+        pred_label = int(preds[sample_idx])
+        ax.imshow(_denormalize_image(images[sample_idx]))
+        ax.set_title(
+            f'true: {CIFAR10_CLASSES[true_label]}\npred: {CIFAR10_CLASSES[pred_label]}',
+            fontsize=9,
+        )
+        ax.axis('off')
+
+    for plot_idx in range(len(chosen), rows * cols):
+        row, col = divmod(plot_idx, cols)
+        axes[row, col].axis('off')
+
+    fig.suptitle('Misclassified Test Examples', fontsize=13)
+    fig.tight_layout()
+    fig.savefig(save_path, dpi=150)
+    plt.close(fig)
+    return chosen.tolist()
+
+
 def plot_loss_landscape(
     checkpoint_path,
     save_path,
@@ -220,6 +356,17 @@ def parse_args():
     parser.add_argument('--checkpoint', type=str, default=None)
     parser.add_argument('--device', type=str, default=get_default_device())
     parser.add_argument('--skip-landscape', action='store_true', help='Skip loss landscape plot')
+    parser.add_argument(
+        '--skip-interpretation',
+        action='store_true',
+        help='Skip confusion matrix and misclassified example plots',
+    )
+    parser.add_argument(
+        '--num-misclassified',
+        type=int,
+        default=12,
+        help='Number of misclassified examples to plot',
+    )
     parser.add_argument('--landscape-step-min', type=float, default=-0.2)
     parser.add_argument('--landscape-step-max', type=float, default=0.2)
     parser.add_argument('--landscape-steps', type=int, default=41)
@@ -234,10 +381,17 @@ def main():
     os.makedirs(run_dir, exist_ok=True)
 
     history_path = args.history or os.path.join(run_dir, 'history.json')
-    checkpoint_path = args.checkpoint or os.path.join(run_dir, 'best_model.pt')
+    if args.checkpoint:
+        checkpoint_path = args.checkpoint
+        if not os.path.isabs(checkpoint_path):
+            checkpoint_path = os.path.normpath(os.path.join(os.path.dirname(__file__), checkpoint_path))
+    else:
+        checkpoint_path = os.path.join(run_dir, 'best_model.pt')
 
     curves_path = os.path.join(run_dir, 'training_curves.png')
     filters_path = os.path.join(run_dir, 'first_conv_filters.png')
+    confusion_path = os.path.join(run_dir, 'confusion_matrix.png')
+    misclassified_path = os.path.join(run_dir, 'misclassified_examples.png')
     landscape_path = os.path.join(run_dir, 'loss_landscape.png')
 
     if os.path.exists(history_path):
@@ -249,6 +403,26 @@ def main():
     if os.path.exists(checkpoint_path):
         plot_filters(checkpoint_path, filters_path, device=args.device)
         print(f'Saved: {filters_path}')
+
+        if not args.skip_interpretation:
+            per_class_acc = plot_confusion_matrix(
+                checkpoint_path,
+                confusion_path,
+                device=args.device,
+                num_workers=args.num_workers,
+            )
+            print(f'Saved: {confusion_path}')
+            print(f'Saved: {os.path.splitext(confusion_path)[0] + ".json"}')
+            plot_misclassified_examples(
+                checkpoint_path,
+                misclassified_path,
+                device=args.device,
+                num_workers=args.num_workers,
+                max_examples=args.num_misclassified,
+            )
+            print(f'Saved: {misclassified_path}')
+            weakest = sorted(per_class_acc.items(), key=lambda item: item[1])[:3]
+            print('Lowest per-class accuracy:', ', '.join(f'{name}={acc:.3f}' for name, acc in weakest))
 
         if not args.skip_landscape:
             plot_loss_landscape(
