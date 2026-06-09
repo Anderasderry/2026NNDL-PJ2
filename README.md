@@ -1,4 +1,4 @@
-# NNDL Project 2 — CIFAR-10 (Task 1 + Task 2)
+# NNDL Project 2 — CIFAR-10
 
 复旦大学《神经网络与深度学习》Project 2。
 
@@ -9,9 +9,9 @@
 
 ```
 PJ2/
-├── data/                          # CIFAR-10 数据集（不提交 GitHub）
-├── logs/                          # 实验日志（不提交 GitHub）
-├── outputs/                       # 全部训练输出（不提交 GitHub）
+├── data/                          # CIFAR-10 数据集
+├── logs/                          # 实验日志
+├── outputs/                       # 全部训练输出
 │   ├── CIFAR10/                   # Task 1：各 run-name 子目录 + experiments_report.json
 │   └── VGG_BatchNorm/             # Task 2：figures/、models/、vgg_a/ 等
 ├── codes/
@@ -28,7 +28,7 @@ PJ2/
 │   │   └── visualize.py           # 曲线 / 滤波器 / loss landscape
 │   └── VGG_BatchNorm/             # Task 2
 │       ├── models/vgg.py          # VGG_A / VGG_A_BatchNorm
-│       ├── VGG_Loss_Landscape.py  # 课程 starter（填 # Add code）+ CLI 入口
+│       ├── VGG_Loss_Landscape.py  # 课程 starter + CLI 入口
 │       ├── experiments.py         # 完整实验流程与 argparse
 │       ├── train_VGG.py           # 训练 / 评估工具
 │       ├── core.py                # landscape 曲线计算
@@ -47,15 +47,7 @@ PJ2/
 pip install torch torchvision numpy matplotlib tqdm
 ```
 
-**昇腾 NPU 环境（如 ModelArts / 华为云 Ascend 910）：**
-
-除上述包外，还需安装 `torch_npu` 及 Ascend CANN toolkit（由平台镜像或官方文档提供）。代码已通过 `codes/common/utils/device.py` 适配 NPU，会自动：
-
-- 禁用有问题的 `torch_npu` 自动加载
-- 修复 `triton` 与 `torch_npu` 的版本兼容问题
-- 按 **npu → cuda → cpu** 优先级选择默认设备
-
-NPU 环境下建议 DataLoader 使用 `--num-workers 0`。
+代码已通过 `codes/common/utils/device.py` 适配 NPU，会自动按 **npu → cuda → cpu** 优先级选择默认设备。
 
 ## 准备数据集
 
@@ -80,14 +72,12 @@ cd codes/CIFAR10
 python train.py --epochs 1 --n-items 256 --batch-size 64 --num-workers 0 --run-name debug
 ```
 
-脚本会自动检测可用设备（NPU 环境下输出 `Device: npu`）。
-
 ## 训练单个实验
 
 在 `codes/CIFAR10/` 下：
 
 ```bash
-# 主实验（baseline，自动使用 NPU / CUDA / CPU）
+# 主实验（baseline）
 python train.py --epochs 200 --run-name cifarnet
 
 # 常用可调参数
@@ -190,7 +180,7 @@ python visualize.py --run-name cifarnet --skip-landscape
 **一键跑完整流程**（项目根目录）：
 
 ```bash
-# 训练 + landscape + 报告用对比图重绘
+# 训练 + landscape + 对比图重绘
 bash run_task2.sh
 
 # 快速调试
@@ -200,7 +190,7 @@ EPOCHS=2 N_ITEMS=1024 bash run_task2.sh
 SKIP_TRAIN=1 bash run_task2.sh
 ```
 
-也可在 `codes/VGG_BatchNorm/` 下手动运行。**带 CLI 参数**时由 `VGG_Loss_Landscape.py` 转发到 `experiments.py`；**无参数**时运行课程 starter 脚本（Jupyter 风格，需 IPython）：
+也可在 `codes/VGG_BatchNorm/` 下手动运行。**带 CLI 参数**时由 `VGG_Loss_Landscape.py` 转发到 `experiments.py`；**无参数**时运行课程 starter 脚本（需 IPython）：
 
 ```bash
 # 完整实验：对比训练 + loss/gradient landscape（默认 20 epochs）
@@ -249,7 +239,7 @@ python VGG_Loss_Landscape.py --replot-predictiveness --plot-stride 1
 | `--plot-stride` | 对比图下采样步长 | 50 |
 | `--fill-alpha` | landscape 填充透明度 | 0.15 |
 
-设备会自动检测（NPU → CUDA → CPU），无需手动指定。输出目录为 `outputs/VGG_BatchNorm/`（由 `common/paths.py` 统一管理）。
+输出目录为 `outputs/VGG_BatchNorm/`（由 `common/paths.py` 统一管理）。
 
 ### 输出文件
 
@@ -270,14 +260,8 @@ python VGG_Loss_Landscape.py --replot-predictiveness --plot-stride 1
 
 | 文件 | 内容 |
 |------|------|
-| `figures/loss_landscape_comparison.png` | 两者 loss landscape 同图对比（作业必做） |
-| `figures/grad_predictiveness_comparison.png` | 梯度可预测性对比（作业必做） |
-| `figures/vgg_a_grad_max_diff.png` | VGG-A 每 step 的 max(grad)-min(grad)（作业选做） |
+| `figures/loss_landscape_comparison.png` | 两者 loss landscape 同图对比 |
+| `figures/grad_predictiveness_comparison.png` | 梯度可预测性对比 |
+| `figures/vgg_a_grad_max_diff.png` | VGG-A 每 step 的 max(grad)-min(grad) |
 | `figures/vgg_a_bn_grad_max_diff.png` | VGG-A+BN 同上 |
 | `vgg_a_landscape.json` / `vgg_a_bn_landscape.json` | landscape 数值数据 |
-
-### 报告建议
-
-- **Part A**：对比训练曲线、验证准确率，说明 BN 加速收敛 / 提升稳定性。
-- **Part B**：展示 loss landscape 对比图（BN 版 band 更窄）；结合 gradient predictiveness 与 max gradient difference 分析优化稳定性。
-- 上传 `outputs/VGG_BatchNorm/models/*.pt` 与 `outputs/CIFAR10/cifarnet_final/best_model.pt` 至网盘，在报告中附链接。
